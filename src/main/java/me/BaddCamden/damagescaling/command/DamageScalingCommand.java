@@ -1,70 +1,60 @@
 package me.BaddCamden.damagescaling.command;
 
-import java.util.ArrayList;
-import java.util.List;
-import me.BaddCamden.damagescaling.ConfigManager;
-import me.BaddCamden.damagescaling.PlayerHealthService;
-import org.bukkit.Bukkit;
+import me.BaddCamden.damagescaling.DamageScalingPlugin;
+import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
-import org.bukkit.entity.Player;
-import org.bukkit.util.StringUtil;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 public class DamageScalingCommand implements CommandExecutor, TabCompleter {
-    private final ConfigManager configManager;
-    private final PlayerHealthService playerHealthService;
 
-    public DamageScalingCommand(ConfigManager configManager, PlayerHealthService playerHealthService) {
-        this.configManager = configManager;
-        this.playerHealthService = playerHealthService;
+    private final DamageScalingPlugin plugin;
+
+    public DamageScalingCommand(DamageScalingPlugin plugin) {
+        this.plugin = plugin;
     }
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!sender.hasPermission("damagescaling.admin")) {
-            sender.sendMessage("You do not have permission to use this command.");
+            sender.sendMessage(ChatColor.RED + "You do not have permission to use this command.");
             return true;
         }
 
         if (args.length != 1) {
-            sender.sendMessage("Usage: /" + label + " <enable|disable>");
+            sender.sendMessage(ChatColor.RED + "Usage: /" + label + " <enable|disable>");
             return true;
         }
 
-        String option = args[0].toLowerCase();
-        switch (option) {
-            case "enable" -> enable(sender);
-            case "disable" -> disable(sender);
-            default -> sender.sendMessage("Unknown option. Use enable or disable.");
+        String action = args[0].toLowerCase();
+        if (action.equals("enable")) {
+            plugin.setScalingEnabled(true);
+            plugin.refreshAllPlayers();
+            sender.sendMessage(ChatColor.GREEN + "Damage scaling is now enabled.");
+            return true;
         }
+
+        if (action.equals("disable")) {
+            plugin.setScalingEnabled(false);
+            plugin.restoreRealHealth();
+            sender.sendMessage(ChatColor.YELLOW + "Damage scaling is now disabled.");
+            return true;
+        }
+
+        sender.sendMessage(ChatColor.RED + "Usage: /" + label + " <enable|disable>");
         return true;
-    }
-
-    private void enable(CommandSender sender) {
-        configManager.reload();
-        configManager.saveEnabledState(true);
-        for (Player online : Bukkit.getOnlinePlayers()) {
-            playerHealthService.applyHealthState(online);
-        }
-        sender.sendMessage("DamageScaling enabled.");
-    }
-
-    private void disable(CommandSender sender) {
-        configManager.reload();
-        configManager.saveEnabledState(false);
-        for (Player online : Bukkit.getOnlinePlayers()) {
-            playerHealthService.applyHealthState(online);
-        }
-        sender.sendMessage("DamageScaling disabled.");
     }
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
-            return StringUtil.copyPartialMatches(args[0], List.of("enable", "disable"), new ArrayList<>());
+            return Arrays.asList("enable", "disable");
         }
-        return List.of();
+        return Collections.emptyList();
     }
 }
