@@ -10,7 +10,7 @@ public final class HealthUtil {
     }
 
     public static double getMaxHealth(Player player) {
-        AttributeInstance instance = player.getAttribute(Attribute.GENERIC_MAX_HEALTH);
+        AttributeInstance instance = player.getAttribute(Attribute.MAX_HEALTH);
         if (instance == null) {
             return 20.0D;
         }
