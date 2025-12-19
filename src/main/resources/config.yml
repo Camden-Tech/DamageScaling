@@ -1,11 +1,16 @@
 enabled: true
-scaling-mode: square_divided_by_max
 
-linear:
-  multiplier: 1.0
-
-exponential:
-  exponent: 1.5
-
-flat:
-  value: 20.0
+scaling:
+  mode: squared_divided_by_max
+  priority:
+    - squared_divided_by_max
+    - linear_fraction
+    - exponential_curve
+  minimum-display-health: 0.1
+  options:
+    squared_divided_by_max: {}
+    linear_fraction:
+      fraction: 0.6
+    exponential_curve:
+      exponent: 1.25
+      multiplier: 1.0

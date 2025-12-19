@@ -1,15 +1,16 @@
 name: DamageScaling
 main: me.BaddCamden.damagescaling.DamageScalingPlugin
 version: 1.0.0
-description: Scales visual player health using configurable formulas while tracking real health separately.
-api-version: '1.21.10'
 author: BaddCamden
+description: >
+  Visually scale player health while preserving real values on the server and persisting them per-player.
+api-version: 1.21.10
 commands:
   damagescaling:
-    description: Enable or disable DamageScaling.
+    description: Enable or disable the damage scaling visuals.
     usage: /damagescaling <enable|disable>
     permission: damagescaling.admin
 permissions:
   damagescaling.admin:
-    description: Allows changing DamageScaling state.
+    description: Allows toggling the damage scaling plugin.
     default: op
