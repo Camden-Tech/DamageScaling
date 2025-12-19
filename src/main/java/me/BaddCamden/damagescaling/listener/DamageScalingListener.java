@@ -61,6 +61,8 @@ public class DamageScalingListener implements Listener {
         realHealthStore.setRealHealth(player, updated);
         if (updated <= 0.0D) {
             player.setHealth(0.0D);
+            event.setCancelled(true);
+            event.setDamage(0.0D);
             return;
         }
 
