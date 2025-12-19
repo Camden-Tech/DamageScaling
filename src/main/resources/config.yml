@@ -1,0 +1,11 @@
+enabled: true
+scaling-mode: square_divided_by_max
+
+linear:
+  multiplier: 1.0
+
+exponential:
+  exponent: 1.5
+
+flat:
+  value: 20.0
