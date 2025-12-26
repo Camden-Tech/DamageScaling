@@ -16,18 +16,31 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 
+/**
+ * Listens for player lifecycle and combat events to keep real and visual health values in sync.
+ */
 public class DamageScalingListener implements Listener {
 
     private final DamageScalingPlugin plugin;
     private final RealHealthStore realHealthStore;
     private final ScalingService scalingService;
 
+    /**
+     * Builds a listener bound to the plugin's services so health changes can be coordinated.
+     *
+     * @param plugin owning plugin instance
+     */
     public DamageScalingListener(DamageScalingPlugin plugin) {
         this.plugin = plugin;
         this.realHealthStore = plugin.getRealHealthStore();
         this.scalingService = plugin.getScalingService();
     }
 
+    /**
+     * Loads a joining player's stored health and applies the appropriate visual value.
+     *
+     * @param event player join event
+     */
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
@@ -35,6 +48,11 @@ public class DamageScalingListener implements Listener {
         applyVisualHealth(plugin, player);
     }
 
+    /**
+     * Persists and clears a quitting player's real health from the cache.
+     *
+     * @param event player quit event
+     */
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
@@ -42,6 +60,12 @@ public class DamageScalingListener implements Listener {
         realHealthStore.clear(player);
     }
 
+    /**
+     * Overrides incoming damage to adjust the stored real health and optionally display scaled
+     * values depending on whether the feature is enabled.
+     *
+     * @param event entity damage event affecting a player
+     */
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onPlayerDamage(EntityDamageEvent event) {
         if (!(event.getEntity() instanceof Player player)) {
@@ -71,6 +95,12 @@ public class DamageScalingListener implements Listener {
         player.setHealth(display);
     }
 
+    /**
+     * Captures healing events to raise the stored real health and keep the player's visible health
+     * aligned with the selected scaling mode.
+     *
+     * @param event entity regain health event affecting a player
+     */
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onPlayerRegain(EntityRegainHealthEvent event) {
         if (!(event.getEntity() instanceof Player player)) {
@@ -93,6 +123,11 @@ public class DamageScalingListener implements Listener {
         player.setHealth(display);
     }
 
+    /**
+     * Records a player's death by zeroing their stored real health before persistence.
+     *
+     * @param event player death event
+     */
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerDeath(PlayerDeathEvent event) {
         Player player = event.getEntity();
@@ -100,6 +135,11 @@ public class DamageScalingListener implements Listener {
         realHealthStore.save(player);
     }
 
+    /**
+     * Restores a respawning player's real health to their maximum before reapplying visual scaling.
+     *
+     * @param event player respawn event
+     */
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerRespawn(PlayerRespawnEvent event) {
         Player player = event.getPlayer();
@@ -110,6 +150,13 @@ public class DamageScalingListener implements Listener {
         });
     }
 
+    /**
+     * Synchronizes a player's displayed health hearts with their stored real health using the
+     * current scaling rules.
+     *
+     * @param plugin plugin providing scaling state and storage access
+     * @param player player whose hearts should be updated
+     */
     public static void applyVisualHealth(DamageScalingPlugin plugin, Player player) {
         double maxHealth = HealthUtil.getMaxHealth(player);
         RealHealthStore store = plugin.getRealHealthStore();
