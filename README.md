@@ -1,24 +1,25 @@
 # DamageScaling
 
-A lightweight Minecraft/Paper plugin that visually scales player health without changing the server-side values. Damage and healing are applied to a hidden “real” health pool that is persisted per player, while the visible hearts are recalculated using configurable scaling curves.
+DamageScaling is a lightweight Paper plugin that **rescales the hearts you see without changing the real health stored by the server**. Incoming damage and healing are applied to a hidden real health pool, then converted to visible hearts using configurable curves. This keeps combat readable while preserving vanilla mechanics for other plugins.
 
-## Requirements
-- Minecraft/Paper API 1.21.10 or compatible.
-- Permission to place the plugin JAR in your server’s `plugins` directory and reload or restart the server.
+## Why use it?
+- **Player-friendly visuals:** Show dramatic heart loss early or smooth out spikes with your preferred curve.
+- **Multiple scaling modes with priorities:** Provide a list of acceptable modes; the first valid one is used, with a fallback mode if none apply.
+- **Per-player persistence:** Real health is stored in `plugins/DamageScaling/playerdata/<uuid>.yml` so visuals remain consistent across reconnects.
+- **Safe toggling:** Enable or disable scaling at runtime—hearts are immediately restored to the real values when turned off.
 
-## Setup
-1. Drop the built JAR into `plugins/`.
-2. Start or reload your server to generate the default `config.yml`.
-3. Adjust the scaling settings (see below) and reload if needed.
+## Quick start
+1. Drop the built JAR into your server’s `plugins/` directory.
+2. Start or reload the server to generate `plugins/DamageScaling/config.yml`.
+3. Optionally adjust the scaling section (see examples below).
+4. Use `/damagescaling enable` to turn visuals on, or `/damagescaling disable` to switch back to vanilla hearts.
 
-## Commands & Permissions
-- `/damagescaling <enable|disable>` — toggles the scaling visuals at runtime.
+Command & permission:
+- `/damagescaling <enable|disable>` — toggles the visual scaling.
   - Permission: `damagescaling.admin` (defaults to `op`).
 
-When scaling is disabled, the plugin restores each player’s real health so hearts match the true values again.
-
-## Configuration
-The default `config.yml` is generated in `plugins/DamageScaling/config.yml`:
+## Configuration reference
+Default configuration (`plugins/DamageScaling/config.yml`):
 
 ```yaml
 enabled: true
@@ -39,23 +40,58 @@ scaling:
       multiplier: 1.0
 ```
 
-- `enabled`: Whether scaling visuals run at startup. `/damagescaling` updates this value and saves the file.
+Key settings:
+- `enabled`: Whether scaling visuals run at startup. Updated when you run `/damagescaling`.
 - `scaling.mode`: Fallback mode if the priority list is empty or invalid.
-- `scaling.priority`: First valid entry is used; invalid names are skipped. Leave empty to always use `scaling.mode`.
-- `scaling.minimum-display-health`: Smallest visible health (in hearts) when the player is still alive.
-- `scaling.options`: Tunables per mode:
-  - `squared_divided_by_max`: `display = (realHealth²) / maxHealth` (steeper falloff at low health).
-  - `linear_fraction`: `display = realHealth * fraction` with `fraction >= 0`.
-  - `exponential_curve`: `display = maxHealth * multiplier * (realHealth / maxHealth)^exponent` with positive exponent and non-negative multiplier.
+- `scaling.priority`: The first valid entry is used; invalid names are skipped.
+- `scaling.minimum-display-health`: Smallest visible health (in hearts) while the player is still alive.
+- `scaling.options`: Per-mode tunables:
+  - `squared_divided_by_max`: `display = (realHealth²) / maxHealth` (steeper early drop for dramatic heart loss).
+  - `linear_fraction`: `display = realHealth * fraction` (`fraction >= 0`).
+  - `exponential_curve`: `display = maxHealth * multiplier * (realHealth / maxHealth)^exponent` (positive exponent, non-negative multiplier).
 
-All computed display values are clamped between 0 and the player’s max health.
+All display values are clamped between 0 and the player’s max health.
 
-## Quirks & Behavior
-- **Real vs. visible health:** While scaling is enabled, `Player#getHealth()` returns the scaled value shown in hearts. The plugin keeps the unscaled “real” health separately and persists it per player in `plugins/DamageScaling/playerdata/<uuid>.yml`.
-- **Event handling:** Damage and healing events are intercepted. The plugin applies their amounts to the real health pool, then zeroes the event amount and directly sets the player’s visual health based on the chosen scaling curve.
-- **Minimum display:** If a player is alive but the scaled value drops below `minimum-display-health`, hearts stay at the minimum until the real health actually hits zero (at which point the player dies).
-- **Toggling scaling:** Disabling scaling immediately restores hearts to the underlying real health. Re-enabling recomputes the displayed hearts for all online players.
-- **Respawns:** On respawn, real health is reset to the player’s max health and the scaled display is applied on the next tick.
+## Usage examples
+### 1) Hardcore warning curve
+Create a harsher early drop so players panic sooner:
+```yaml
+scaling:
+  priority: [squared_divided_by_max]
+  options:
+    squared_divided_by_max: {}
+  minimum-display-health: 0.2
+```
+With 20 max health and 14 real health, hearts display roughly 9.8—visibly worse than vanilla’s 14.
+
+### 2) Casual smoothing
+Keep hearts steadier by scaling linearly:
+```yaml
+scaling:
+  priority: [linear_fraction]
+  options:
+    linear_fraction:
+      fraction: 0.7
+```
+At 10 real health out of 20, players see 7 hearts instead of 10, softening the perceived danger.
+
+### 3) Boss fight accentuation
+Highlight late-fight tension with an exponential curve:
+```yaml
+scaling:
+  priority: [exponential_curve]
+  options:
+    exponential_curve:
+      exponent: 1.5
+      multiplier: 1.0
+```
+A player at half real health (10/20) shows about 7.1 hearts—enough warning without hiding survivability.
+
+## Runtime behavior
+- **Event handling:** Damage/heal events are applied to the real health pool, the event amount is zeroed, and the visible hearts are set using the active curve.
+- **Minimum display:** Hearts never drop below `minimum-display-health` until real health reaches zero (then the player dies normally).
+- **Toggling scaling:** Disabling scaling restores hearts to the real values; re-enabling recomputes visuals for online players.
+- **Respawns:** On respawn, real health resets to max and scaling is applied on the next tick.
 
 ## Building
 This is a Maven project. From the repository root:
