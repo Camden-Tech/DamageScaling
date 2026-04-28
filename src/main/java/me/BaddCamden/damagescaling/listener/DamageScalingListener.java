@@ -93,6 +93,7 @@ public class DamageScalingListener implements Listener {
         event.setDamage(0.0D);
         double display = scalingService.computeDisplayHealth(updated, maxHealth);
         player.setHealth(display);
+        applyVanillaInvulnerabilityWindow(player);
     }
 
     /**
@@ -172,5 +173,18 @@ public class DamageScalingListener implements Listener {
 
         double display = plugin.getScalingService().computeDisplayHealth(realHealth, maxHealth);
         player.setHealth(display);
+    }
+
+    /**
+     * Reapplies the default post-hit invulnerability period when we intercept and cancel Bukkit's
+     * native damage handling.
+     *
+     * @param player player that has just taken scaled damage
+     */
+    private static void applyVanillaInvulnerabilityWindow(Player player) {
+        int maximumNoDamageTicks = player.getMaximumNoDamageTicks();
+        if (maximumNoDamageTicks > 0) {
+            player.setNoDamageTicks(maximumNoDamageTicks);
+        }
     }
 }
